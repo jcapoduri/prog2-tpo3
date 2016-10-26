@@ -86,14 +86,6 @@ implementation
     write(this.control, RC);
   end;
 
-  procedure _balanceLeft(var this : tAVLtree; pivot : idxRange);
-  begin
-  end;
-
-  procedure _balanceRight (var this : tAVLtree; pivot : idxRange);
-  begin
-  end;
-
   function _max(a, b : integer) : integer;
   begin
     if a > b then
@@ -117,8 +109,46 @@ implementation
     _height := h;
   end;
 
-  procedure _detach (var this : tAVLtree; pos : idxRange; var item : tNode);
+  function _append (var this : tAVLtree; var item : tNode) : idxRange;
+  var
+    rc      : tControlRecord;
+    pos     : idxRange;
+    auxNode : tNode;
   begin
+    rc  := _getControl(this);
+    pos := NULLIDX;
+    if Rc.erased = NULLIDX then
+      begin
+        pos := filesize(this.data);
+        seek(this.data, pos);
+        item.right := NULLIDX;
+        item.left  := NULLIDX;
+        write(this.data, item);
+      end
+    else
+      begin
+        pos        := rc.erased;
+        auxNode    := _get(this, pos);
+        rc.erased  := auxNode.parent;
+        item.right := NULLIDX;
+        item.left  := NULLIDX;
+        _set(this, pos, item);
+        _setControl(this, rc);
+      end;
+    _append := pos;
+  end;
+
+  procedure _detach (var this : tAVLtree; pos : idxRange; var node : tNode);
+  var
+    rc : tControlRecord;
+  begin
+    rc          := _getControl(this);
+    node.right  := NULLIDX;
+    node.left   := NULLIDX;
+    node.parent := rc.erased;
+    rc.erased   := pos;
+    _set(this, pos, node);
+    _setControl(this, rc);
   end;
 
   function _isLeaf(var node : tNode) : boolean;
@@ -150,6 +180,27 @@ implementation
         node  := _get(this, pivot);
       end;
     _getSmallerFromBranch := node.key;
+  end;
+
+  procedure _balanceLeft(var this : tAVLtree; pivot : idxRange);
+  begin
+  end;
+
+  procedure _balanceRight (var this : tAVLtree; pivot : idxRange);
+  begin
+  end;
+
+  procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange; var node : tNode);
+  var
+    hLeft, hRight  : integer;
+  begin
+    hLeft  := _height(this, node.left);
+    hRight := _height(this, node.right);
+    if abs(hLeft - hRight) > 1 then
+      if hLeft > hRight then
+        _balanceRight (this, pivot)
+      else
+        _balanceLeft  (this, pivot);
   end;
 
   { key helpers }
@@ -207,7 +258,7 @@ implementation
     fullFileName := path + filename;
     {$I-}
     assign(this.data, fullFileName + '.dat');
-    assign(this.data, fullFileName + '.ctrl');
+    assign(this.control, fullFileName + '.ctrl');
     rewrite(this.data);
     rewrite(this.control);
     rc.root := NULLIDX;
@@ -262,35 +313,6 @@ implementation
     search := found;
   end;
 
-  function _append (var this : tAVLtree; var item : tNode) : idxRange;
-  var
-    rc      : tControlRecord;
-    pos     : idxRange;
-    auxNode : tNode;
-  begin
-    rc  := _getControl(this);
-    pos := NULLIDX;
-    if Rc.erased = NULLIDX then
-      begin
-        pos := filesize(this.data);
-        seek(this.data, pos);
-        item.right := NULLIDX;
-        item.left  := NULLIDX;
-        write(this.data, item);
-      end
-    else
-      begin
-        pos        := rc.erased;
-        auxNode    := _get(this, pos);
-        rc.erased  := auxNode.right;
-        item.right := NULLIDX;
-        item.left  := NULLIDX;
-        _set(this, pos, item);
-        _setControl(this, rc);
-      end;
-    _append := pos;
-  end;
-
   procedure insert           (var this : tAVLtree; pos: idxRange; key : tKey);
   var
     node, parent : tNode;
@@ -317,6 +339,8 @@ implementation
           parent.left  := auxIdx;
         _set(this, pos, parent);
       end;
+
+    _balanceIfNeeded(this, pos, node);
 
     _setControl(this, rc);
     _closeTree(this);
@@ -368,7 +392,7 @@ implementation
         _set(this, pos, node);
       end;
 
-      //TODO: balance
+    _balanceIfNeeded(this, pos, node);
 
     _closeTree(this);
   end;

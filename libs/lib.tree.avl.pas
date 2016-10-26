@@ -187,7 +187,38 @@ implementation
   end;
 
   procedure _balanceRight (var this : tAVLtree; pivot : idxRange);
+  var
+    pivotNode, newBranchRoot, parentNode : tNode;
+    newBranchRootIdx, parentIdx          : idxRange;
+    rc                                   : tControlRecord;
   begin
+    pivotNode        := _get(this, pivot);
+    newBranchRootIdx := pivotNode.left;
+    newBranchRoot    := _get(this, newBranchRootIdx);
+
+    pivotNode.left      := newBranchRoot.right;
+    newBranchRoot.right := pivot;
+    parentIdx           := pivotNode.parent;
+    pivotNode.parent    := newBranchRootIdx;
+
+
+    if parentIdx = NULLIDX then // pivot was root, update
+      begin
+        rc      := _getControl(this);
+        rc.root := newBranchRootIdx;
+        _setControl(this, rc);
+      end
+    else
+      begin
+        parentNode := _get(this, parentIdx);
+        if parentNode.left = pivot then
+          parentNode.left  := newBranchRootIdx
+        else
+          parentNode.right := newBranchRootIdx;
+        _set(this, parentIdx, parentNode);
+      end;
+    _set(this, pivot, pivotNode);
+    _set(this, newBranchRootIdx, newBranchRoot);
   end;
 
   procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange; var node : tNode);
@@ -340,9 +371,9 @@ implementation
         _set(this, pos, parent);
       end;
 
-    _balanceIfNeeded(this, pos, node);
-
     _setControl(this, rc);
+
+    _balanceIfNeeded(this, pos, node);
     _closeTree(this);
   end;
 

@@ -32,8 +32,14 @@ type
   procedure newEmptyTree     (var this : tAVLtree; path, filename : string);
   function  isEmpty          (var this : tAVLtree) : boolean;
   function  search           (var this : tAVLtree; key : tKey; pos: idxRange) : boolean;
-  procedure insert           (var this : tAVLtree; key : tKey);
+  procedure insert           (var this : tAVLtree; pos: idxRange; key : tKey);
   procedure remove           (var this: tAVLtree; pos: idxRange);
+  function  fetch            (var this : tAVLtree; pos: idxRange) : tNode;
+  function  root             (var this : tAVLtree) : idxRange;
+  function  leftChild        (var this : tAVLtree; pos: idxRange) : idxRange;
+  function  rightChild       (var this : tAVLtree; pos: idxRange) : idxRange;
+  function  parent           (var this : tAVLtree; pos: idxRange) : idxRange;
+
 
 
 implementation
@@ -180,12 +186,91 @@ implementation
     search := found;
   end;
 
-  procedure insert           (var this : tAVLtree; key : tKey);
+  function _append (var this : tAVLtree; var item : tNode) : idxRange;
+  var
+    rc      : tControlRecord;
+    pos     : idxRange;
+    auxNode : tNode;
+  begin
+    rc  := _getControl(this);
+    pos := NULLIDX;
+    if Rc.erased = NULLIDX then
+      begin
+        pos := filesize(this.data);
+        seek(this.data, pos);
+        item.right := NULLIDX;
+        item.left  := NULLIDX;
+        write(this.data, item);
+      end
+    else
+      begin
+        pos        := rc.erased;
+        auxNode    := _get(this, pos);
+        rc.erased  := auxNode.right;
+        item.right := NULLIDX;
+        item.left  := NULLIDX;
+        _set(this, pos, item);
+        _setControl(this, rc);
+      end;
+    _append := pos;
+  end;
+
+  procedure insert           (var this : tAVLtree; pos: idxRange; key : tKey);
   begin
   end;
 
   procedure remove           (var this: tAVLtree; pos: idxRange);
   begin
+  end;
+
+  function  fetch            (var this : tAVLtree; pos: idxRange) : tNode;
+  var
+    node : tNode;
+  begin
+    _openTree(this);
+    node := _get(this, pos);
+    _closeTree(this);
+    fetch := node;
+  end;
+
+  function  root             (var this : tAVLtree) : idxRange;
+  var
+    rc : tControlRecord;
+  begin
+    _openTree(this);
+    rc := _getControl(this);
+    _closeTree(this);
+    root := rc.root;
+  end;
+
+  function  leftChild        (var this : tAVLtree; pos: idxRange) : idxRange;
+  var
+    node : tNode;
+  begin
+    _openTree(this);
+    node := _get(this, pos);
+    _closeTree(this);
+    leftChild := node.left;
+  end;
+
+  function  rightChild       (var this : tAVLtree; pos: idxRange) : idxRange;
+  var
+    node : tNode;
+  begin
+    _openTree(this);
+    node := _get(this, pos);
+    _closeTree(this);
+    rightChild := node.right;
+  end;
+
+  function  parent           (var this : tAVLtree; pos: idxRange) : idxRange;
+  var
+    node : tNode;
+  begin
+    _openTree(this);
+    node := _get(this, pos);
+    _closeTree(this);
+    parent := node.parent;
   end;
 
 

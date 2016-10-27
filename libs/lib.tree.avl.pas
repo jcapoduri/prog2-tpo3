@@ -31,7 +31,7 @@ type
   procedure loadTree         (var this : tAVLtree; path, filename : string);
   procedure newEmptyTree     (var this : tAVLtree; path, filename : string);
   function  isEmpty          (var this : tAVLtree) : boolean;
-  function  search           (var this : tAVLtree; key : tKey; pos: idxRange) : boolean;
+  function  search           (var this : tAVLtree; key : tKey; var pos: idxRange) : boolean;
   procedure insert           (var this : tAVLtree; pos: idxRange; key : tKey);
   procedure remove           (var this: tAVLtree; pos: idxRange);
   function  fetch            (var this : tAVLtree; pos: idxRange) : tNode;
@@ -75,8 +75,8 @@ implementation
   var
     rc : tControlRecord;
   begin
-    seek(this.control, 0);
-    read(this.control, rc);
+    seek (this.control, 0);
+    read (this.control, rc);
     _getControl := rc;
   end;
 
@@ -119,11 +119,10 @@ implementation
     pos := NULLIDX;
     if Rc.erased = NULLIDX then
       begin
-        pos := filesize(this.data);
-        seek(this.data, pos);
+        pos        := filesize(this.data);
         item.right := NULLIDX;
         item.left  := NULLIDX;
-        write(this.data, item);
+        _set(this, pos, item);
       end
     else
       begin
@@ -182,6 +181,8 @@ implementation
     _getSmallerFromBranch := node.key;
   end;
 
+  procedure _balanceRight (var this : tAVLtree; pivot : idxRange); forward;
+
   procedure _balanceLeft(var this : tAVLtree; pivot : idxRange);
   begin
   end;
@@ -195,6 +196,8 @@ implementation
     pivotNode        := _get(this, pivot);
     newBranchRootIdx := pivotNode.left;
     newBranchRoot    := _get(this, newBranchRootIdx);
+
+    {TODO: check if need to re-balance}
 
     pivotNode.left      := newBranchRoot.right;
     newBranchRoot.right := pivot;
@@ -221,7 +224,7 @@ implementation
     _set(this, newBranchRootIdx, newBranchRoot);
   end;
 
-  procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange; var node : tNode);
+  procedure _balanceBranch (var this : tAVLtree; pivot : idxRange; node : tNode);
   var
     hLeft, hRight  : integer;
   begin
@@ -232,6 +235,19 @@ implementation
         _balanceRight (this, pivot)
       else
         _balanceLeft  (this, pivot);
+  end;
+
+  procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange; node : tNode);
+  var
+    rootIdx  : idxRange;
+    rootNode : tNode;
+    rc       : tControlRecord;
+  begin
+    rc       := _getControl(this);
+    rootIdx  := rc.root;
+    rootNode := _get(this, rootIdx);
+    _balanceBranch(this, pivot, node);
+    _balanceBranch(this, rootIdx, rootNode);
   end;
 
   { key helpers }
@@ -311,7 +327,7 @@ implementation
     isEmpty := empty;
   end;
 
-  function  search           (var this : tAVLtree; key : tKey; pos: idxRange) : boolean;
+  function  search           (var this : tAVLtree; key : tKey; var pos: idxRange) : boolean;
   var
     found      : boolean;
     curNodeIdx : idxRange;
@@ -323,7 +339,7 @@ implementation
     rc         := _getControl(this);
     curNodeIdx := rc.root;
     pos        := NULLIDX;
-    while (curNodeIdx <> NULLIDX) and not found do
+    while (curNodeIdx <> NULLIDX) and (not found) do
       begin
         curNode := _get(this, curNodeIdx);
         if keyEq(curNode.key, key) then
@@ -351,7 +367,6 @@ implementation
     auxIdx       : idxRange;
   begin
     _openTree(this);
-    rc          := _getControl(this);
     node.key    := key;
     node.parent := pos;
     auxIdx      := _append(this, node);
@@ -359,19 +374,19 @@ implementation
     if pos = NULLIDX then //empty tree, insert at root
       begin
         rc      := _getControl(this);
-        rc.root := pos;
+        rc.root := auxIdx;
+        _setControl(this, rc);
       end
     else
       begin
         parent := _get(this, pos);
         if keyGt(parent.key, key) then
-          parent.right := auxIdx
+          parent.left := auxIdx
         else
-          parent.left  := auxIdx;
+          parent.right  := auxIdx;
         _set(this, pos, parent);
       end;
 
-    _setControl(this, rc);
 
     _balanceIfNeeded(this, pos, node);
     _closeTree(this);

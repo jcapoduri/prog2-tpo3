@@ -184,7 +184,45 @@ implementation
   procedure _balanceRight (var this : tAVLtree; pivot : idxRange); forward;
 
   procedure _balanceLeft(var this : tAVLtree; pivot : idxRange);
+  var
+    pivotNode, newBranchRoot, parentNode : tNode;
+    newBranchRootIdx, parentIdx          : idxRange;
+    rc                                   : tControlRecord;
+    hLeft, hRight                        : integer;
   begin
+    pivotNode        := _get(this, pivot);
+    newBranchRootIdx := pivotNode.right;
+    newBranchRoot    := _get(this, newBranchRootIdx);
+
+    {check if need to re-balance}
+    hLeft            := _height(this, newBranchRoot.left);
+    hRight           := _height(this, newBranchRoot.right);
+    if (hLeft - hRight) > 1 then
+      _balanceRight(this, newBranchRootIdx);
+
+    pivotNode.right    := newBranchRoot.left;
+    newBranchRoot.left := pivot;
+    parentIdx          := pivotNode.parent;
+    pivotNode.parent   := newBranchRootIdx;
+
+
+    if parentIdx = NULLIDX then // pivot was root, update
+      begin
+        rc      := _getControl(this);
+        rc.root := newBranchRootIdx;
+        _setControl(this, rc);
+      end
+    else
+      begin
+        parentNode := _get(this, parentIdx);
+        if parentNode.left = pivot then
+          parentNode.left  := newBranchRootIdx
+        else
+          parentNode.right := newBranchRootIdx;
+        _set(this, parentIdx, parentNode);
+      end;
+    _set(this, pivot, pivotNode);
+    _set(this, newBranchRootIdx, newBranchRoot);
   end;
 
   procedure _balanceRight (var this : tAVLtree; pivot : idxRange);
@@ -192,12 +230,17 @@ implementation
     pivotNode, newBranchRoot, parentNode : tNode;
     newBranchRootIdx, parentIdx          : idxRange;
     rc                                   : tControlRecord;
+    hLeft, hRight                        : integer;
   begin
     pivotNode        := _get(this, pivot);
     newBranchRootIdx := pivotNode.left;
     newBranchRoot    := _get(this, newBranchRootIdx);
 
-    {TODO: check if need to re-balance}
+    {check if need to re-balance}
+    hLeft            := _height(this, newBranchRoot.left);
+    hRight           := _height(this, newBranchRoot.right);
+    if (hRight - hLeft) > 1 then
+      _balanceLeft(this, newBranchRootIdx);
 
     pivotNode.left      := newBranchRoot.right;
     newBranchRoot.right := pivot;

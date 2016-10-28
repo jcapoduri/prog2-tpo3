@@ -15,6 +15,7 @@ var
   tree : tAVLtree;
   idx  : idxRange;
   op   : integer;
+  key  : tKey;
 
 procedure dumpTree(var tree : tAVLtree; root : idxRange);
 var
@@ -29,6 +30,16 @@ begin
       dumpTree(tree, node.right);
       write(')');
     end;
+end;
+
+function getRandomKey() : tKey;
+var
+  letter : char;
+  number : integer;
+begin
+  letter := char(Random(25) + 65);
+  number := Random(100);
+  getRandomKey := concat(letter, IntToStr(number));
 end;
 
 begin
@@ -51,5 +62,17 @@ begin
   writeln('dump tree:');
   dumpTree(tree, lib.tree.avl.root(tree));
   writeln;
+
+  while true do
+    begin
+      key := getRandomKey();
+      writeln('inserting ', key, '...');
+      lib.tree.avl.search(tree, key, idx);
+      lib.tree.avl.insert(tree, idx, key);
+      writeln('dump tree:');
+      dumpTree(tree, lib.tree.avl.root(tree));
+
+      wait('press any key to insert a new value');
+    end;
 
 end.

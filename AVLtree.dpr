@@ -5,17 +5,18 @@ program AVLtree;
 uses
   sysutils,
   lib.tree.avl in 'libs\lib.tree.avl.pas',
-  io.helpers   in 'libs\io.helpers.pas';
+  io.helpers in 'libs\io.helpers.pas',
+  Console in 'libs\console.pas';
 
 const
   PATH     = 'data/';
   FILENAME = 'avltree';
 
 var
-  tree : tAVLtree;
-  idx  : idxRange;
-  op   : integer;
-  key  : tKey;
+  tree       : tAVLtree;
+  idx        : idxRange;
+  op,i, cant : integer;
+  key        : tKey;
 
 procedure dumpTree(var tree : tAVLtree; root : idxRange);
 var
@@ -63,16 +64,52 @@ begin
   dumpTree(tree, lib.tree.avl.root(tree));
   writeln;
 
-  while true do
-    begin
-      key := getRandomKey();
-      writeln('inserting ', key, '...');
-      lib.tree.avl.search(tree, key, idx);
-      lib.tree.avl.insert(tree, idx, key);
-      writeln('dump tree:');
-      dumpTree(tree, lib.tree.avl.root(tree));
+  Repeat
 
-      wait('press any key to insert a new value');
-    end;
+   Repeat
 
+    writeln('Menu (1-4)');
+    writeln('1- Cargar arbol');
+    writeln('2- Visualizar arbol');
+    writeln('3- Eliminar nodo');
+    writeln('4- Salir');
+    readln(op);
+
+    if (op<1) or (op>4) then
+     begin
+      writeln('Error en el ingreso de datos, pulse una tecla para continuar');
+      readln;
+     end;
+   Until (op>=1) and (op<=4);
+
+  Case op of
+
+  1: begin
+     write('Cantidad de claves aleatoreas a ingresar: ');
+     read(cant);
+     For i:=1 to cant do
+      begin
+        key := getRandomKey();
+        lib.tree.avl.search(tree, key, idx);
+        lib.tree.avl.insert(tree, idx, key);
+      end;
+     end;//op 1
+  2: begin
+       dumpTree(tree, lib.tree.avl.root(tree));
+       writeln;
+     end;//op 2
+
+  3: begin
+      writeln('Ingrese la clave a eliminar');
+      readln(key);
+      if (lib.tree.avl.search(tree,key,idx)) then
+       lib.tree.avl.remove(tree,idx)
+      Else
+       writeln('Clave ingresada no encontrada');
+     end;//op 3
+
+  end;// case
+
+
+  Until  op = 4;
 end.

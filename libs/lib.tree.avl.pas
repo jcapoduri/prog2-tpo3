@@ -198,7 +198,12 @@ implementation
     hLeft            := _height(this, newBranchRoot.left);
     hRight           := _height(this, newBranchRoot.right);
     if (hLeft - hRight) > 1 then
-      _balanceRight(this, newBranchRootIdx);
+      begin
+        _balanceRight(this, newBranchRootIdx);
+        pivotNode        := _get(this, pivot);
+        newBranchRootIdx := pivotNode.right;
+        newBranchRoot    := _get(this, newBranchRootIdx);
+      end;
 
     pivotNode.right    := newBranchRoot.left;
     newBranchRoot.left := pivot;
@@ -240,7 +245,12 @@ implementation
     hLeft            := _height(this, newBranchRoot.left);
     hRight           := _height(this, newBranchRoot.right);
     if (hRight - hLeft) > 1 then
-      _balanceLeft(this, newBranchRootIdx);
+      begin
+        _balanceLeft(this, newBranchRootIdx);
+        pivotNode        := _get(this, pivot);
+        newBranchRootIdx := pivotNode.left;
+        newBranchRoot    := _get(this, newBranchRootIdx);
+      end;
 
     pivotNode.left      := newBranchRoot.right;
     newBranchRoot.right := pivot;

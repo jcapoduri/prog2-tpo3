@@ -5,8 +5,8 @@ program AVLtree;
 uses
   sysutils,
   lib.tree.avl in 'libs\lib.tree.avl.pas',
-  io.helpers in 'libs\io.helpers.pas',
-  Console in 'libs\console.pas';
+  io.helpers in 'libs\io.helpers.pas';
+  //Console in 'libs\console.pas';
 
 const
   PATH     = 'data/';
@@ -14,7 +14,7 @@ const
 
 var
   tree : tAVLtree;
-  idx  : idxRange;  
+  idx  : idxRange;
   op   : integer;
   key  : tKey;
 
@@ -27,7 +27,7 @@ begin
       node := lib.tree.avl.fetch(tree, root);
       write(' ':gap);
       writeln(tag, ':', node.key, ' ->');
-      dumpTree(tree, node.left, gap + 1, 'left');      
+      dumpTree(tree, node.left, gap + 1, 'left');
       dumpTree(tree, node.right, gap + 1, 'right');
     end;
 end;
@@ -44,7 +44,7 @@ var
   number : integer;
 begin
   letter := char(Random(25) + 65);
-  number := Random(100);  
+  number := Random(100);
   getRandomKey := concat(letter, SysUtils.Format('%.*d', [2, number]));
 end;
 
@@ -59,7 +59,7 @@ end;
 
 function menu() : integer;
 begin
-  ClrScr;
+  //ClrScr;
   writeln('Menu (1-4)');
   writeln('1- Cargar al azar arbol');
   writeln('2- Cargar un nodo al arbol');
@@ -80,6 +80,7 @@ begin
       key := getRandomKey();
       lib.tree.avl.search(tree, key, idx);
       lib.tree.avl.insert(tree, idx, key);
+      showTree;
       amount := amount - 1;
     end;
 end;

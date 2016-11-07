@@ -205,10 +205,11 @@ implementation
         newBranchRoot    := _get(this, newBranchRootIdx);
       end;
 
-    pivotNode.right    := newBranchRoot.left;
-    newBranchRoot.left := pivot;
-    parentIdx          := pivotNode.parent;
-    pivotNode.parent   := newBranchRootIdx;
+    pivotNode.right      := newBranchRoot.left;
+    newBranchRoot.left   := pivot;
+    parentIdx            := pivotNode.parent;
+    newBranchRoot.parent := parentIdx;
+    pivotNode.parent     := newBranchRootIdx;
 
 
     if parentIdx = NULLIDX then // pivot was root, update
@@ -252,10 +253,11 @@ implementation
         newBranchRoot    := _get(this, newBranchRootIdx);
       end;
 
-    pivotNode.left      := newBranchRoot.right;
-    newBranchRoot.right := pivot;
-    parentIdx           := pivotNode.parent;
-    pivotNode.parent    := newBranchRootIdx;
+    pivotNode.left       := newBranchRoot.right;
+    newBranchRoot.right  := pivot;
+    parentIdx            := pivotNode.parent;
+    newBranchRoot.parent := parentIdx;
+    pivotNode.parent     := newBranchRootIdx;
 
 
     if parentIdx = NULLIDX then // pivot was root, update
@@ -292,15 +294,16 @@ implementation
 
   procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange; node : tNode);
   var
-    rootIdx  : idxRange;
-    rootNode : tNode;
-    rc       : tControlRecord;
+    currentIdx  : idxRange;
+    currentNode : tNode;
   begin
-    rc       := _getControl(this);
-    rootIdx  := rc.root;
-    rootNode := _get(this, rootIdx);
-    _balanceBranch(this, pivot, node);
-    _balanceBranch(this, rootIdx, rootNode);
+    currentIdx  := pivot;
+    while currentIdx <> NULLIDX do
+      begin
+        currentNode := _get(this, currentIdx);
+        _balanceBranch(this, currentIdx, currentNode);
+        currentIdx := currentNode.parent;
+      end;
   end;
 
   { key helpers }

@@ -292,7 +292,7 @@ implementation
         _balanceLeft  (this, pivot);
   end;
 
-  procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange; node : tNode);
+  procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange);
   var
     currentIdx  : idxRange;
     currentNode : tNode;
@@ -444,18 +444,17 @@ implementation
       end;
 
 
-    _balanceIfNeeded(this, pos, node);
+    _balanceIfNeeded(this, pos);
     _closeTree(this);
   end;
 
-  procedure remove           (var this: tAVLtree; pos: idxRange);
+  procedure _remove          (var this: tAVLtree; pos: idxRange);
   var
     node, parent   : tNode;
     rc             : tControlRecord;
     auxIdx         : idxRange;
     replacementKey : tKey;
   begin
-    _openTree(this);
     node        := _get(this, pos);
 
     if _isLeaf(node) then //easy
@@ -468,12 +467,13 @@ implementation
           end
         else
           begin
-            parent := _get(this, node.parent);
+            auxIdx := node.parent;
+            parent := _get(this, auxIdx);
             if parent.right = pos then
               parent.right := NULLIDX
             else
               parent.left  := NULLIDX;
-            _set(this, node.parent, parent);
+            _set(this, auxIdx, parent);
           end;
         _detach(this, pos, node);
       end
@@ -482,20 +482,24 @@ implementation
         if node.right = NULLIDX then
           begin
             auxIdx         := node.left;
-            replacementKey := _getSmallerFromBranch(this, auxIdx);
+            replacementKey := _getBiggerFromBranch(this, auxIdx);
           end
         else
           begin
             auxIdx         := node.right;
-            replacementKey := _getBiggerFromBranch(this, auxIdx);
+            replacementKey := _getSmallerFromBranch(this, auxIdx);
           end;
-        remove(this, auxIdx);
         node.key := replacementKey;
         _set(this, pos, node);
+        _remove(this, auxIdx);
       end;
+  end;
 
-    _balanceIfNeeded(this, pos, node);
-
+  procedure remove          (var this: tAVLtree; pos: idxRange);
+  begin
+    _openTree(this);
+    _balanceIfNeeded(this, pos);
+    _remove(this, pos);
     _closeTree(this);
   end;
 

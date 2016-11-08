@@ -26,15 +26,15 @@ begin
     begin
       node := lib.tree.avl.fetch(tree, root);
       write(' ':gap);
-      writeln(tag, ':', node.key, ' ->');
-      dumpTree(tree, node.left, gap + 1, 'left');
-      dumpTree(tree, node.right, gap + 1, 'right');
+      writeln(tag, node.key, ' ->');
+      dumpTree(tree, node.left, gap + 1, 'left:');
+      dumpTree(tree, node.right, gap + 1, 'right:');
     end;
 end;
 
 procedure showTree();
 begin
-  dumpTree(tree, lib.tree.avl.root(tree), 0, '');
+  dumpTree(tree, lib.tree.avl.root(tree), 0, 'root:');
   wait('presione enter para continuar.');
 end;
 
@@ -78,10 +78,11 @@ begin
   while amount <> 0 do
     begin
       key := getRandomKey();
-      lib.tree.avl.search(tree, key, idx);
-      lib.tree.avl.insert(tree, idx, key);
-      showTree;
-      amount := amount - 1;
+      if not lib.tree.avl.search(tree, key, idx) then
+        begin
+          lib.tree.avl.insert(tree, idx, key);
+          amount := amount - 1;
+        end;
     end;
 end;
 

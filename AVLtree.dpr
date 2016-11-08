@@ -6,8 +6,9 @@ uses
   sysutils,
   lib.tree.avl in 'libs\lib.tree.avl.pas',
   io.helpers in 'libs\io.helpers.pas';
-  //Console in 'libs\console.pas';
-
+{$IFNDEF FPC}
+  Console in 'libs\console.pas';
+{$ENDIF}
 const
   PATH     = 'data/';
   FILENAME = 'avltree';
@@ -59,7 +60,9 @@ end;
 
 function menu() : integer;
 begin
-  //ClrScr;
+{$IFNDEF FPC}
+  ClrScr;
+{$ENDIF}
   writeln('Menu (1-4)');
   writeln('1- Cargar al azar arbol');
   writeln('2- Cargar un nodo al arbol');

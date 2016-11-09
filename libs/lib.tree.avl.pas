@@ -181,9 +181,9 @@ implementation
     _getSmallerFromBranch := node.key;
   end;
 
-  procedure _balanceRight (var this : tAVLtree; pivot : idxRange); forward;
+  procedure _balanceRight (var this : tAVLtree; var pivot : idxRange); forward;
 
-  procedure _balanceLeft(var this : tAVLtree; pivot : idxRange);
+  procedure _balanceLeft(var this : tAVLtree; var pivot : idxRange);
   var
     pivotNode, newBranchRoot, parentNode : tNode;
     newBranchRootIdx, parentIdx          : idxRange;
@@ -227,11 +227,14 @@ implementation
           parentNode.right := newBranchRootIdx;
         _set(this, parentIdx, parentNode);
       end;
+    
     _set(this, pivot, pivotNode);
     _set(this, newBranchRootIdx, newBranchRoot);
+
+    pivot := newBranchRootIdx;
   end;
 
-  procedure _balanceRight (var this : tAVLtree; pivot : idxRange);
+  procedure _balanceRight (var this : tAVLtree; var pivot : idxRange);
   var
     pivotNode, newBranchRoot, parentNode : tNode;
     newBranchRootIdx, parentIdx          : idxRange;
@@ -275,11 +278,14 @@ implementation
           parentNode.right := newBranchRootIdx;
         _set(this, parentIdx, parentNode);
       end;
+    
     _set(this, pivot, pivotNode);
     _set(this, newBranchRootIdx, newBranchRoot);
+
+    pivot := newBranchRootIdx;
   end;
 
-  procedure _balanceBranch (var this : tAVLtree; pivot : idxRange; node : tNode);
+  procedure _balanceBranch (var this : tAVLtree; var pivot : idxRange; node : tNode);
   var
     hLeft, hRight  : integer;
   begin
@@ -302,6 +308,7 @@ implementation
       begin
         currentNode := _get(this, currentIdx);
         _balanceBranch(this, currentIdx, currentNode);
+        currentNode := _get(this, currentIdx);
         currentIdx := currentNode.parent;
       end;
   end;
@@ -334,11 +341,11 @@ implementation
     //check if data file exists
     assign(this.data, fullFileName + '.dat');
     reset(this.data);
-    dataError := IOResult = 0;
+    dataError := IOResult <> 0;
 
     assign(this.control, fullFileName + '.ctrl');
     reset(this.control);
-    controlError := IOResult = 0;
+    controlError := IOResult <> 0;
     {$I+}
 
     if (controlError and dataError) then
@@ -436,10 +443,10 @@ implementation
     else
       begin
         parent := _get(this, pos);
-        if keyGt(parent.key, key) then
-          parent.left := auxIdx
+        if keyGt(key, parent.key) then
+          parent.right := auxIdx
         else
-          parent.right  := auxIdx;
+          parent.left  := auxIdx;
         _set(this, pos, parent);
       end;
 

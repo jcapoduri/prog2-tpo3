@@ -4,18 +4,19 @@ program AVLtree;
 
 uses
   sysutils,
+  StrUtils,
   lib.tree.avl in 'libs\lib.tree.avl.pas',
-  io.helpers in 'libs\io.helpers.pas';
+  io.helpers in 'libs\io.helpers.pas',
 {$IFNDEF FPC}
-  Console in 'libs\console.pas';
+  Console in 'libs\Console.pas'
 {$ENDIF}
+  ;
 const
   PATH     = 'data/';
   FILENAME = 'avltree';
 
 var
   tree : tAVLtree;
-  idx  : idxRange;
   op   : integer;
   key  : tKey;
 
@@ -51,17 +52,25 @@ end;
 
 function getKey() : string;
 var
-  key: string;
+  key   : string;
+  valid : boolean;
+  c     : char;
 begin
   write('ingrese una clave: ');
-  readln(key);
+  valid := false;
+  while not valid do
+    begin
+      readln(key);
+      c := key[1];
+      valid := (Length(key) = 3) AND ((c >= 'A') AND (c <= 'Z')) and (StrToIntDef(AnsiRightStr(key, 2), 0) > 0);
+    end;
   getKey := key;
 end;
 
 function menu() : integer;
 begin
 {$IFNDEF FPC}
-  ClrScr;
+//  ClrScr;
 {$ENDIF}
   writeln('Menu (1-4)');
   writeln('1- Cargar al azar arbol');
@@ -83,6 +92,7 @@ begin
       key := getRandomKey();
       if not lib.tree.avl.search(tree, key, idx) then
         begin
+          write(key, ' - ');
           lib.tree.avl.insert(tree, idx, key);
           amount := amount - 1;
         end;

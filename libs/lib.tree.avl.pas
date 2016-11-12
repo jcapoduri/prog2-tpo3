@@ -155,6 +155,36 @@ implementation
     _isLeaf := (node.left = NULLIDX) and (node.right = NULLIDX);
   end;
 
+  function _parent(var this : tAVLtree; var idx : idxRange) : idxRange;
+  var
+    node : tNode;
+  begin
+    node    := _get(this, idx);
+    _parent := node.parent;
+  end;
+
+  procedure _updateParent(var this : tAVLtree; parentIdx, old, new : idxRange);
+  var
+    rc         : tControlRecord;
+    parentNode : tNode;
+  begin
+    if parentIdx = NULLIDX then // pivot was root, update
+      begin
+        rc      := _getControl(this);
+        rc.root := new;
+        _setControl(this, rc);
+      end
+    else
+      begin
+        parentNode := _get(this, parentIdx);
+        if parentNode.left = old then
+          parentNode.left  := new
+        else
+          parentNode.right := new;
+        _set(this, parentIdx, parentNode);
+      end;
+  end;
+
   function _getBiggerFromBranch (var this : tAVLtree; var pivot : idxRange) : tKey;
   var
     node : tNode;
@@ -185,19 +215,20 @@ implementation
 
   procedure _balanceLeft(var this : tAVLtree; var pivot : idxRange);
   var
-    pivotNode, newBranchRoot, parentNode : tNode;
+    pivotNode, newBranchRoot, auxNode : tNode;
     newBranchRootIdx, parentIdx          : idxRange;
     rc                                   : tControlRecord;
     hLeft, hRight                        : integer;
   begin
     pivotNode        := _get(this, pivot);
+    parentIdx        := pivotNode.parent;
     newBranchRootIdx := pivotNode.right;
     newBranchRoot    := _get(this, newBranchRootIdx);
 
     {check if need to re-balance}
     hLeft            := _height(this, newBranchRoot.left);
     hRight           := _height(this, newBranchRoot.right);
-    if (hLeft - hRight) > 1 then
+    if (hLeft > hRight) then
       begin
         _balanceRight(this, newBranchRootIdx);
         pivotNode        := _get(this, pivot);
@@ -207,27 +238,18 @@ implementation
 
     pivotNode.right      := newBranchRoot.left;
     newBranchRoot.left   := pivot;
-    parentIdx            := pivotNode.parent;
     newBranchRoot.parent := parentIdx;
     pivotNode.parent     := newBranchRootIdx;
 
+    _updateParent(this, parentIdx, pivot, newBranchRootIdx);
 
-    if parentIdx = NULLIDX then // pivot was root, update
+    if pivotNode.right <> NULLIDX then
       begin
-        rc      := _getControl(this);
-        rc.root := newBranchRootIdx;
-        _setControl(this, rc);
-      end
-    else
-      begin
-        parentNode := _get(this, parentIdx);
-        if parentNode.left = pivot then
-          parentNode.left  := newBranchRootIdx
-        else
-          parentNode.right := newBranchRootIdx;
-        _set(this, parentIdx, parentNode);
+        auxNode          := _get(this, pivotNode.right);
+        auxNode.parent   := pivot;
+        _set(this, pivotNode.right, auxNode);
       end;
-    
+
     _set(this, pivot, pivotNode);
     _set(this, newBranchRootIdx, newBranchRoot);
 
@@ -236,19 +258,19 @@ implementation
 
   procedure _balanceRight (var this : tAVLtree; var pivot : idxRange);
   var
-    pivotNode, newBranchRoot, parentNode : tNode;
-    newBranchRootIdx, parentIdx          : idxRange;
-    rc                                   : tControlRecord;
-    hLeft, hRight                        : integer;
+    pivotNode, newBranchRoot, auxNode : tNode;
+    newBranchRootIdx, parentIdx       : idxRange;
+    hLeft, hRight                     : integer;
   begin
     pivotNode        := _get(this, pivot);
+    parentIdx        := pivotNode.parent;
     newBranchRootIdx := pivotNode.left;
     newBranchRoot    := _get(this, newBranchRootIdx);
 
     {check if need to re-balance}
     hLeft            := _height(this, newBranchRoot.left);
     hRight           := _height(this, newBranchRoot.right);
-    if (hRight - hLeft) > 1 then
+    if (hRight > hLeft) then
       begin
         _balanceLeft(this, newBranchRootIdx);
         pivotNode        := _get(this, pivot);
@@ -258,37 +280,30 @@ implementation
 
     pivotNode.left       := newBranchRoot.right;
     newBranchRoot.right  := pivot;
-    parentIdx            := pivotNode.parent;
     newBranchRoot.parent := parentIdx;
     pivotNode.parent     := newBranchRootIdx;
 
+    _updateParent(this, parentIdx, pivot, newBranchRootIdx);
 
-    if parentIdx = NULLIDX then // pivot was root, update
+    if pivotNode.left <> NULLIDX then
       begin
-        rc      := _getControl(this);
-        rc.root := newBranchRootIdx;
-        _setControl(this, rc);
-      end
-    else
-      begin
-        parentNode := _get(this, parentIdx);
-        if parentNode.left = pivot then
-          parentNode.left  := newBranchRootIdx
-        else
-          parentNode.right := newBranchRootIdx;
-        _set(this, parentIdx, parentNode);
+        auxNode          := _get(this, pivotNode.left);
+        auxNode.parent   := pivot;
+        _set(this, pivotNode.left, auxNode);
       end;
-    
+
     _set(this, pivot, pivotNode);
     _set(this, newBranchRootIdx, newBranchRoot);
 
     pivot := newBranchRootIdx;
   end;
 
-  procedure _balanceBranch (var this : tAVLtree; var pivot : idxRange; node : tNode);
+  procedure _balanceBranch (var this : tAVLtree; var pivot : idxRange);
   var
     hLeft, hRight  : integer;
+    node           : tNode;
   begin
+    node   := _get(this, pivot);
     hLeft  := _height(this, node.left);
     hRight := _height(this, node.right);
     if abs(hLeft - hRight) > 1 then
@@ -301,15 +316,12 @@ implementation
   procedure _balanceIfNeeded (var this : tAVLtree; pivot : idxRange);
   var
     currentIdx  : idxRange;
-    currentNode : tNode;
   begin
     currentIdx  := pivot;
     while currentIdx <> NULLIDX do
       begin
-        currentNode := _get(this, currentIdx);
-        _balanceBranch(this, currentIdx, currentNode);
-        currentNode := _get(this, currentIdx);
-        currentIdx := currentNode.parent;
+        _balanceBranch(this, currentIdx);
+        currentIdx := _parent(this, currentIdx);
       end;
   end;
 
@@ -505,8 +517,8 @@ implementation
   procedure remove          (var this: tAVLtree; pos: idxRange);
   begin
     _openTree(this);
-    _balanceIfNeeded(this, pos);
     _remove(this, pos);
+    _balanceIfNeeded(this, pos);
     _closeTree(this);
   end;
 
@@ -552,12 +564,12 @@ implementation
 
   function  parent           (var this : tAVLtree; pos: idxRange) : idxRange;
   var
-    node : tNode;
+    idx : idxRange;
   begin
     _openTree(this);
-    node := _get(this, pos);
+    idx := _parent(this, pos);
     _closeTree(this);
-    parent := node.parent;
+    parent := idx;
   end;
 
 
